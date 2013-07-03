@@ -23,7 +23,8 @@ import acs.jpbs.utils.Logger;
 public class jPBSMain extends QWidget implements jPBSClientInterface {
 	private final int WIDTH = 500;
 	private final int HEIGHT = 350;
-	private jPBSServerInterface server;
+	private static jPBSServerInterface server;
+	private static PbsServer pbsServer = null;
 	private static QLabel console;
 	
 	public jPBSMain() {
@@ -42,13 +43,13 @@ public class jPBSMain extends QWidget implements jPBSClientInterface {
 		this.setWindowTitle("jPBS Client");
 		this.show();
 		
-		Logger.logInfo("Connecting...");
+		logInfo("Connecting...");
 		try {
 			Registry registry = LocateRegistry.getRegistry();
 			server = (jPBSServerInterface)registry.lookup("jPBS-Server");
 			UnicastRemoteObject.exportObject(this, 0);
 			server.register(this);
-			Logger.logInfo("Connected to server.");
+			logInfo("Connected to server.");
 		} catch(Exception e) {
 			Logger.logException("Client unable to connect to server.", e);
 		}
@@ -80,15 +81,74 @@ public class jPBSMain extends QWidget implements jPBSClientInterface {
 		gridMain.setRowStretch(0, 1);
 	}
 	
-	public void updateServer(PbsServer newServer) throws RemoteException { }
+	public static void logInfo(String _info) {
+		Logger.logInfo(_info);
+		console.setText(console.text()+"\n"+_info);
+	}
 	
-	public void updateQueue(PbsQueue newQueue) throws RemoteException { }
+	public void updateServer(PbsServer newServer) throws RemoteException { 
+		updateServerLocal(newServer);
+	}
 	
-	public void updateJob(PbsJob newJob) throws RemoteException { }
+	public static void updateServerLocal(PbsServer newServer) {
+		if(pbsServer == null) pbsServer = newServer;
+		else {
+			pbsServer.makeCopy(newServer);
+		}
+	}
+	
+	public void updateQueue(PbsQueue newQueue) throws RemoteException {
+		updateQueueLocal(newQueue);
+	}
+	
+	public static void updateQueueLocal(PbsQueue newQueue) {
+		PbsQueue origQueue = pbsServer.getQueue(newQueue.getName());
+		if(origQueue ==  null) {
+			pbsServer.addQueue(newQueue);
+		} else {
+			origQueue.makeCopy(newQueue);
+		}
+	}
+	
+	public void updateJob(PbsJob newJob) throws RemoteException {
+		updateJobLocal(newJob);
+	}
+	
+	public static void updateJobLocal(PbsJob newJob) {
+		PbsQueue jQueue = pbsServer.getQueue(newJob.getQueueName()); 
+		if(jQueue == null) {
+			jQueue = new PbsQueue(newJob.getQueueName(), pbsServer);
+			jQueue.addJob(newJob);
+			pbsServer.addQueue(jQueue);
+		} else {
+			PbsJob origJob = jQueue.getJob(newJob.getId());
+			if(origJob == null) {
+				jQueue.addJob(newJob);
+			} else {
+				origJob.makeCopy(newJob);
+			}
+		}
+	}
+
 	
 	public static void main(String args[]) {
 		QApplication.initialize(args);
 		new jPBSMain();
 		QApplication.exec();
+		try {
+			updateServerLocal(server.getServerObject());
+			for(PbsQueue q : server.getQueueArray()) {
+				updateQueueLocal(q);
+			}
+			for(PbsJob j : server.getJobArray()) {
+				updateJobLocal(j);
+			}
+		} catch(Exception e) {
+			Logger.logException("Error retreiving PBS data", e);
+		}
+		logInfo("Server data retreived successfully");
+		logInfo("PBS Server: "+pbsServer.getHostName());
+		logInfo("Queues: "+pbsServer.getNumQueues()+" total");
+		logInfo("Jobs: "+pbsServer.getNumJobs()+" total");
 	}
 }
