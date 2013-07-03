@@ -1,7 +1,8 @@
 package acs.jpbs.gui;
 
-import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 import com.trolltech.qt.core.QRect;
@@ -43,9 +44,11 @@ public class jPBSMain extends QWidget implements jPBSClientInterface {
 		
 		Logger.logInfo("Connecting...");
 		try {
-			server = (jPBSServerInterface)Naming.lookup("jPBS-Server");
-			UnicastRemoteObject.exportObject(this);
+			Registry registry = LocateRegistry.getRegistry();
+			server = (jPBSServerInterface)registry.lookup("jPBS-Server");
+			UnicastRemoteObject.exportObject(this, 0);
 			server.register(this);
+			Logger.logInfo("Connected to server.");
 		} catch(Exception e) {
 			Logger.logException("Client unable to connect to server.", e);
 		}
