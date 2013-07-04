@@ -5,7 +5,8 @@ public class Launcher extends Thread {
 	public Launcher() { }
 	
 	public void run() {
-		new jPBSMain();
-		jPBSMain.run();
+		jPBSMain main = jPBSMain.getInstance();
+		main.connect();
+		main.run();
 	}
 }

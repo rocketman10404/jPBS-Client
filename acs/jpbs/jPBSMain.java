@@ -16,21 +16,38 @@ import acs.jpbs.utils.Logger;
 public class jPBSMain implements jPBSClientInterface {
 	private static jPBSServerInterface server;
 	private static PbsServer pbsServer = null;
+	private static jPBSMain instance = null;
 	public static GuiMain gui;
 	
-	public jPBSMain() {
+	private jPBSMain() {
 		gui = GuiMain.getInstance();
-		
-		logInfo("Connecting...");
+	}
+	
+	public void connect() {
+		logInfo("Connecting to jPBS Server...");
 		try {
 			Registry registry = LocateRegistry.getRegistry();
 			server = (jPBSServerInterface)registry.lookup("jPBS-Server");
-			UnicastRemoteObject.exportObject(this, 0);
+			UnicastRemoteObject.exportObject(this,0);
 			server.register(this);
-			logInfo("Connected to server.");
+			logInfo("Connection created successfully.");
 		} catch(Exception e) {
-			Logger.logException("Client unable to connect to server.", e);
+			logInfo("Connection attempt unsuccessful.");
+			Logger.logException("", e);
 		}
+	}
+	
+	public void disconnect() {
+		try {
+			server.deregister(this);
+		} catch(Exception e) {
+			Logger.logException("Error while disconnecting from the server:", e);
+		}
+	}
+	
+	public static jPBSMain getInstance() {
+		if(instance == null) instance = new jPBSMain();
+		return instance;
 	}
 	
 	public static void logInfo(String _info) {
@@ -38,8 +55,7 @@ public class jPBSMain implements jPBSClientInterface {
 		gui.printToConsole(_info);
 	}
 	
-	public static void run() {
-		new jPBSMain();
+	public void run() {
 		try {
 			updateServerLocal(server.getServerObject());
 			for(PbsQueue q : server.getQueueArray()) {
@@ -55,6 +71,7 @@ public class jPBSMain implements jPBSClientInterface {
 		logInfo("PBS Server: "+pbsServer.getHostName());
 		logInfo("Queues: "+pbsServer.getNumQueues()+" total");
 		logInfo("Jobs: "+pbsServer.getNumJobs()+" total");
+		gui.updateStatus();
 	}
 	
 	public static void updateJobLocal(PbsJob newJob) {
@@ -83,10 +100,8 @@ public class jPBSMain implements jPBSClientInterface {
 	}
 	
 	public static void updateServerLocal(PbsServer newServer) {
-		if(pbsServer == null) pbsServer = newServer;
-		else {
-			pbsServer.makeCopy(newServer);
-		}
+		PbsServer.makeCopy(newServer);
+		pbsServer = PbsServer.getInstance();
 	}
 	
 	public void updateJob(PbsJob newJob) throws RemoteException {
