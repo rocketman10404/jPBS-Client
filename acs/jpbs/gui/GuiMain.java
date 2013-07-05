@@ -3,8 +3,6 @@ package acs.jpbs.gui;
 import acs.jpbs.Launcher;
 import acs.jpbs.jPBSMain;
 import acs.jpbs.gui.widgets.StatusTree;
-import acs.jpbs.status.IPbsObject;
-import acs.jpbs.status.PbsServerHandler;
 
 import com.trolltech.qt.core.QRect;
 import com.trolltech.qt.gui.QApplication;
@@ -20,8 +18,7 @@ public class GuiMain extends QWidget {
 	private final int HEIGHT = 700;
 	
 	public final Signal1<String> printSignal = new Signal1<String>();
-	public final Signal3<IPbsObject, IPbsObject, Integer> updateModelSignal = new Signal3<IPbsObject, IPbsObject, Integer>();
-	public final Signal0 updateTreeSignal = new Signal0();
+	public final Signal0 updateModelSignal =  new Signal0();
 	
 	private static QTextEdit console;
 	private static StatusTree sTree;
@@ -86,8 +83,7 @@ public class GuiMain extends QWidget {
 		quitButton.clicked.connect(this, "close()");
 		QApplication.instance().lastWindowClosed.connect(QApplication.instance(), "quit()");
 		this.printSignal.connect(console, "insertPlainText(String)");
-		this.updateModelSignal.connect(sTree.model(), "setupModelData(IPbsObject, IPbsObject, Integer)");
-		this.updateTreeSignal.connect(sTree, "updateMe()");
+		this.updateModelSignal.connect(sTree.model(), "reload()");
 		
 		// Populate layout managers
 		gridMain.addWidget(sTree, 0, 0, 1, 3);
@@ -106,7 +102,6 @@ public class GuiMain extends QWidget {
 	}
 	
 	public void updateStatus() {
-		this.updateModelSignal.emit(PbsServerHandler.getInstance(), null, 0);
-		this.updateTreeSignal.emit();
+		this.updateModelSignal.emit();
 	}
 }
