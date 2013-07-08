@@ -11,11 +11,12 @@ import acs.jpbs.core.PbsServer;
 import acs.jpbs.gui.GuiMain;
 import acs.jpbs.net.jPBSClientInterface;
 import acs.jpbs.net.jPBSServerInterface;
+import acs.jpbs.status.PbsServerHandler;
 import acs.jpbs.utils.Logger;
 
 public class jPBSMain implements jPBSClientInterface {
 	private static jPBSServerInterface server;
-	private static PbsServer pbsServer = null;
+	public static PbsServerHandler pbsServer = PbsServerHandler.getInstance();
 	private static jPBSMain instance = null;
 	public static GuiMain gui;
 	
@@ -68,7 +69,7 @@ public class jPBSMain implements jPBSClientInterface {
 			Logger.logException("Error retreiving PBS data", e);
 		}
 		logInfo("Server data retreived successfully");
-		logInfo("PBS Server: "+pbsServer.getHostName());
+		logInfo("PBS Server: "+pbsServer.getName());
 		logInfo("Queues: "+pbsServer.getNumQueues()+" total");
 		logInfo("Jobs: "+pbsServer.getNumJobs()+" total");
 		gui.updateStatus();
@@ -77,7 +78,7 @@ public class jPBSMain implements jPBSClientInterface {
 	public static void updateJobLocal(PbsJob newJob) {
 		PbsQueue jQueue = pbsServer.getQueue(newJob.getQueueName()); 
 		if(jQueue == null) {
-			jQueue = new PbsQueue(newJob.getQueueName(), pbsServer);
+			jQueue = new PbsQueue(newJob.getQueueName(), pbsServer.getServer());
 			jQueue.addJob(newJob);
 			pbsServer.addQueue(jQueue);
 		} else {
@@ -101,7 +102,7 @@ public class jPBSMain implements jPBSClientInterface {
 	
 	public static void updateServerLocal(PbsServer newServer) {
 		PbsServer.makeCopy(newServer);
-		pbsServer = PbsServer.getInstance();
+		PbsServerHandler.loadServerData();
 	}
 	
 	public void updateJob(PbsJob newJob) throws RemoteException {

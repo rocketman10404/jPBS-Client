@@ -4,6 +4,7 @@ import acs.jpbs.Launcher;
 import acs.jpbs.jPBSMain;
 import acs.jpbs.gui.widgets.StatusTree;
 
+import com.trolltech.qt.core.QModelIndex;
 import com.trolltech.qt.core.QRect;
 import com.trolltech.qt.gui.QApplication;
 import com.trolltech.qt.gui.QCloseEvent;
@@ -19,6 +20,7 @@ public class GuiMain extends QWidget {
 	
 	public final Signal1<String> printSignal = new Signal1<String>();
 	public final Signal0 updateModelSignal =  new Signal0();
+	public final Signal1<QModelIndex> expandTreeRoot = new Signal1<QModelIndex>();
 	
 	private static QTextEdit console;
 	private static StatusTree sTree;
@@ -84,6 +86,7 @@ public class GuiMain extends QWidget {
 		QApplication.instance().lastWindowClosed.connect(QApplication.instance(), "quit()");
 		this.printSignal.connect(console, "insertPlainText(String)");
 		this.updateModelSignal.connect(sTree.model(), "reload()");
+		this.expandTreeRoot.connect(sTree, "expand(QModelIndex)");
 		
 		// Populate layout managers
 		gridMain.addWidget(sTree, 0, 0, 1, 3);

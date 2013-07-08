@@ -1,7 +1,7 @@
 package acs.jpbs.gui.widgets;
 
+import acs.jpbs.jPBSMain;
 import acs.jpbs.status.IPbsObject;
-import acs.jpbs.status.PbsServerHandler;
 
 import com.trolltech.qt.QtBlockedSlot;
 import com.trolltech.qt.core.QObject;
@@ -17,8 +17,8 @@ public class StatusModel extends QTreeModel {
 	@Override
 	@QtBlockedSlot
 	public Object child(Object arg0, int arg1) {
-		if(arg0 == null && PbsServerHandler.getInstance() != null) {
-			return PbsServerHandler.getInstance();
+		if(arg0 == null) {
+			return jPBSMain.pbsServer;
 		} else if(arg0 instanceof IPbsObject) {
 			return ((IPbsObject)arg0).child(arg1);
 		} else return null;
@@ -27,7 +27,7 @@ public class StatusModel extends QTreeModel {
 	@Override
 	@QtBlockedSlot
 	public int childCount(Object arg0) {
-		if(arg0 == null && PbsServerHandler.getInstance() != null) {
+		if(arg0 == null) {
 			return 1;
 		} else if(arg0 instanceof IPbsObject) {
 			return ((IPbsObject)arg0).childCount();
@@ -37,8 +37,8 @@ public class StatusModel extends QTreeModel {
 	@Override
 	@QtBlockedSlot
 	public String text(Object arg0) {
-		if(arg0 == null && PbsServerHandler.getInstance() != null) {
-			return PbsServerHandler.getInstance().getName();
+		if(arg0 == null) {
+			return jPBSMain.pbsServer.getName();
 		} else if (arg0 instanceof IPbsObject) {
 			return ((IPbsObject)arg0).getName();
 		} else return null;
@@ -59,8 +59,8 @@ public class StatusModel extends QTreeModel {
 		return result;
 	}
 	
-	public void reload() {
+	public synchronized void reload() {
 		this.reset();
-		((StatusTree)this.parent()).expand(null);
+		jPBSMain.gui.expandTreeRoot.emit(this.index(0, 0));
 	}
 }
